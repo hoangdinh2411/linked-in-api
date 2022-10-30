@@ -2,13 +2,12 @@ const UserModel = require('../../schemas/User')
 const { register, login } = require('../../validations/auth')
 const createError = require('http-errors')
 const jwt = require('jsonwebtoken')
-const config = require('../../utils/auth.config')
 const sendConfirmationEmail = require('../../utils/nodemailer.config')
+const appConfig = require('../../utils/app.config')
 class AuthController {
   static async register(req, res, next) {
     try {
-      const { email, password, confirmPassword, accepted_policy } = req.body
-
+      const { email, password, confirmPassword } = req.body
       const { error } = await register.validate({
         email,
         password,
@@ -21,7 +20,6 @@ class AuthController {
       let user_model = new UserModel({
         email: email.toLowerCase().trim(),
         confirmation_code,
-        accepted_policy,
       })
 
       user_model.setPassword(req.body.password)
@@ -33,7 +31,10 @@ class AuthController {
           }
         })
         .then(() =>
-          res.status(200).send('Register Success ! Please check your email')
+          res.status(200).send({
+            status: 'success',
+            message: 'Register Success ! Please check your email',
+          })
         )
         .catch((err) => {
           throw new createError.Conflict('Email Exits')
@@ -96,11 +97,11 @@ class AuthController {
     }
   }
   static async generateToken(payload) {
-    let access_token = jwt.sign(payload, config.token_user_secret, {
+    let access_token = jwt.sign(payload, appConfig.token_user_secret, {
       expiresIn: '1h',
     })
 
-    let refresh_token = jwt.sign(payload, config.token_user_secret, {
+    let refresh_token = jwt.sign(payload, appConfig.refresh_token_secret, {
       expiresIn: '7d',
     })
     await UserModel.findByIdAndUpdate(
@@ -122,7 +123,7 @@ class AuthController {
   }
 
   static async generateConfirmationCode(email) {
-    let code = jwt.sign(email, config.token_user_secret)
+    let code = jwt.sign(email, appConfig.token_user_secret)
     return code
   }
 }

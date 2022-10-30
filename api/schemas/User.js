@@ -1,7 +1,6 @@
 const mongoose = require('mongoose')
 const crypto = require('crypto')
-const jwt = require('jsonwebtoken')
-const config = require('../utils/auth.config')
+const Helpers = require('../../plugins/helpers')
 const userSchema = new mongoose.Schema(
   {
     full_name: {
@@ -24,10 +23,6 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
     },
-    accepted_policy: {
-      type: Boolean,
-      default: false,
-    },
     status: {
       type: String,
       enum: ['pending', 'active'],
@@ -48,7 +43,7 @@ const userSchema = new mongoose.Schema(
     timestamps: {
       createAt: 'created_at',
       updatedAt: 'updated_at',
-      currentTime: () => Math.round(new Date().getTime() / 1000),
+      currentTime: () => Helpers.getDateTime(),
     },
   }
 )
@@ -79,7 +74,7 @@ userSchema.methods.jsonData = function () {
 }
 userSchema.pre(/'updateOne | findOneAndUpdate'/, function (next) {
   this.set({
-    updatedAt: Math.round(new Date().getTime() / 1000),
+    updatedAt: () => Helpers.getDateTime(),
   })
 
   next()

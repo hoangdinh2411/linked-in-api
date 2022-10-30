@@ -7,6 +7,7 @@ require('dotenv').config({
   path: './.env',
 })
 const createError = require('http-errors')
+const appConfig = require('./api/utils/app.config')
 
 const PORT = process.env.PORT || 3001
 
@@ -30,7 +31,7 @@ app.use((error, req, res, next) => {
   })
 })
 
-app.listen(PORT, () => {
+app.listen(appConfig.port, () => {
   db()
-  console.log('The server listening on port ' + PORT)
+  console.log('The server listening on port ' + appConfig.port)
 })

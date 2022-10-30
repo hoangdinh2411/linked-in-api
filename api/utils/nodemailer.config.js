@@ -35,12 +35,15 @@ const sendConfirmationEmail = async (email, confirmation_code) => {
       subject: 'Please confirm your account',
       html: `
         <h1>Email Confirmation Code</h1>
-        <h2>Hello ${email}</h2>
+        <h2>Hello ${getUsernameFromEmail(email)}</h2>
         <p>Thank you for subscribing. Please click the link to verifying</p>
-        <a href="http://localhost:5000/api/v1/client/confirm/${confirmation_code}">Click here to verify your account</a>
+        <a href="https://linked-in-app.vercel.app/auth/confirm/${confirmation_code}">Click here to verify your account</a>
         </div>`,
     })
     .catch((err) => console.log(err))
 }
-
+const getUsernameFromEmail = (email) => {
+  const atSignCharacterIndex = email.indexOf('@')
+  return email.slice(0, atSignCharacterIndex)
+}
 module.exports = sendConfirmationEmail
