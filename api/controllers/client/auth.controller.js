@@ -47,7 +47,7 @@ class AuthController {
   static async login(req, res, next) {
     try {
       const { email, password } = req.body
-      const { error } = await login.validateAsync({ email, password })
+      const { error } = await login.validate({ email, password })
       if (error) throw new createError.BadRequest(error.details[0].message)
       const existing_user = await UserModel.findOne({
         email: email.trim().toLowerCase(),
