@@ -1,4 +1,5 @@
 const { expressjwt: jwt } = require('express-jwt')
+const UserModel = require('../schemas/User')
 
 const getAccessTokenFromHeaders = function (req) {
   const { authorization } = req.headers
@@ -13,19 +14,10 @@ const getAccessTokenFromHeaders = function (req) {
 const isRevokedCallbackUser = async function (req, token, done) {
   try {
     req.payload = token.payload
-
-    return done(null)
+    return token === 'undefined'
   } catch (error) {
-    return done('Has an error')
+    return done('has an error')
   }
-}
-const isRevokedCallbackAdmin = async function (req, token, done) {
-  req.payload = token.payload
-
-  if (!['admin'].includes(payload.role)) {
-    return done('Access denied')
-  }
-  return done(null)
 }
 
 // 2 options algorithms HS256/RS256
@@ -35,14 +27,6 @@ const middlewareOptions = {
     algorithms: ['HS256'],
     getToken: getAccessTokenFromHeaders,
     isRevoked: isRevokedCallbackUser,
-    userProperty: 'payload',
-  }),
- 
-  admin: jwt({
-    secret: process.env.JWT_ADMIN_SECRET,
-    algorithms: ['HS256'],
-    getToken: getAccessTokenFromHeaders,
-    isRevoked: isRevokedCallbackAdmin,
     userProperty: 'payload',
   }),
 }

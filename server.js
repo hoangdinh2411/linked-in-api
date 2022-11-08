@@ -6,10 +6,9 @@ const db = require('./plugins/db')
 require('dotenv').config({
   path: './.env',
 })
-const createError = require('http-errors')
+const createHttpErrors = require('http-errors')
 const appConfig = require('./api/utils/app.config')
 
-const PORT = process.env.PORT || 3001
 
 const app = express()
 dotenv.config()
@@ -21,15 +20,9 @@ app.use(express.urlencoded({ extended: false }))
 app.use('/api/v1', require('./api/index'))
 
 app.use((req, res, next) => {
-  next(createError[500]('Something wrong on server. Try again late! '))
+  next(createHttpErrors[500]('Something wrong on server. Try again late! '))
 })
-app.use((error, req, res, next) => {
-  console.log(error)
-  res.json({
-    status: error.status || 500,
-    message: error.message,
-  })
-})
+app.use(require('./api/middleware/handleError'))
 
 app.listen(appConfig.port, () => {
   db()

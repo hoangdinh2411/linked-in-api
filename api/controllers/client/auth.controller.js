@@ -1,6 +1,6 @@
 const UserModel = require('../../schemas/User')
 const { register, login } = require('../../validations/auth')
-const createError = require('http-errors')
+const createHttpErrors = require('http-errors')
 const jwt = require('jsonwebtoken')
 const sendConfirmationEmail = require('../../utils/nodemailer.config')
 const appConfig = require('../../utils/app.config')
@@ -8,12 +8,12 @@ class AuthController {
   static async register(req, res, next) {
     try {
       const { email, password, confirmPassword } = req.body
-      const { error } = await register.validate({
+      const { error } = register.validate({
         email,
         password,
         confirmPassword,
       })
-      if (error) throw new createError.BadRequest(error.details[0].message)
+      if (error) throw new createHttpErrors.BadRequest(error.details[0].message)
       const confirmation_code = await AuthController.generateConfirmationCode(
         email
       )
@@ -37,7 +37,7 @@ class AuthController {
           })
         )
         .catch((err) => {
-          throw new createError.Conflict('Email Exits')
+          throw new createHttpErrors.Conflict('Email Exits')
         })
     } catch (error) {
       next(error)
@@ -47,29 +47,56 @@ class AuthController {
   static async login(req, res, next) {
     try {
       const { email, password } = req.body
-      const { error } = await login.validate({ email, password })
-      if (error) throw new createError.BadRequest(error.details[0].message)
+      const { error } = login.validate({ email, password })
+      if (error) throw new createHttpErrors.BadRequest(error.details[0].message)
       const existing_user = await UserModel.findOne({
         email: email.trim().toLowerCase(),
       })
 
-      if (!existing_user) throw new createError.NotFound('User Not Found')
+      if (!existing_user) throw new createHttpErrors.NotFound('User Not Found')
       if (!existing_user.validatePassword(password))
-        throw new createError.Forbidden('Password Is Incorrect')
+        throw new createHttpErrors.Forbidden('Password Is Incorrect')
       if (existing_user.status !== 'active')
-        throw new createError.Unauthorized(
+        throw new createHttpErrors.Unauthorized(
           'Pending Account. Please Verify Your Email!'
         )
 
       let token = await AuthController.generateToken({
         id: existing_user._id,
-        email: existing_user.email,
+        full_name: existing_user.full_name,
         status: existing_user.status,
-        role: existing_user.role,
       })
       const data = existing_user.jsonData()
       data.token = token
       return res.status(200).send({ status: 'success', token })
+    } catch (error) {
+      next(error)
+    }
+  }
+  static async getNewAccessToken(req, res, next) {
+    try {
+      const refresh_token = req.body.refresh_token
+      if (!refresh_token)
+        throw new createHttpErrors.BadRequest('invalid refresh token')
+      jwt.verify(
+        refresh_token,
+        appConfig.refresh_token_secret,
+        function (err, decoded) {
+          if (err) {
+            throw new createHttpErrors.Unauthorized('refresh token expired')
+          }
+        }
+      )
+
+      // let token = await AuthController.generateToken({
+      //   id: existing_user._id,
+      //   full_name: existing_user.full_name,
+      //   status: existing_user.status,
+      //   role: existing_user.role,
+      // })
+      // const data = existing_user.jsonData()
+      // data.token = token
+      // return res.status(200).send({ status: 'success', token })
     } catch (error) {
       next(error)
     }
@@ -81,7 +108,7 @@ class AuthController {
         confirmation_code: req.params.confirmation_code,
       }).then((user) => {
         if (!user) {
-          throw new createError[404]('User Not Found.')
+          throw new createHttpErrors[404]('User Not Found.')
         }
         user.status = 'active'
         user.confirmation_code = undefined

@@ -5,6 +5,10 @@ const userSchema = new mongoose.Schema(
   {
     full_name: {
       type: String,
+      default: function () {
+        const index = this.email.lastIndexOf('@')
+        return this.email.slice(0, index)
+      },
     },
     email: {
       type: String,
@@ -13,6 +17,10 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
+    },
+    headline:{
+      type: String,
+
     },
     address: {
       type: String,
@@ -37,6 +45,12 @@ const userSchema = new mongoose.Schema(
     confirmation_code: {
       type: String,
       unique: true,
+    },
+    refresh_token: {
+      type: String,
+    },
+    access_token: {
+      type: String,
     },
   },
   {
@@ -63,8 +77,7 @@ userSchema.methods.validatePassword = function (password) {
 }
 userSchema.methods.jsonData = function () {
   return {
-    firstName: this.firstName,
-    lastName: this.lastName,
+    full_name: this.full_name,
     email: this.email,
     address: this.address,
     avatar: this.avatar,
