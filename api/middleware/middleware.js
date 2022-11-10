@@ -1,14 +1,15 @@
 const { expressjwt: jwt } = require('express-jwt')
-const UserModel = require('../schemas/User')
 
 const getAccessTokenFromHeaders = function (req) {
-  const { authorization } = req.headers
-  if (authorization && authorization.split(' ')[0] === 'Bearer') {
-    const access_token = authorization.split(' ')[1]
-    req.token = access_token
-    return access_token
-  }
-  return null
+  if (!req.url.includes('new-access-token')) {
+    const { authorization } = req.headers
+    if (authorization && authorization.split(' ')[0] === 'Bearer') {
+      const access_token = authorization.split(' ')[1]
+      req.token = access_token
+      return access_token
+    }
+    return null
+  } 
 }
 
 const isRevokedCallbackUser = async function (req, token, done) {
@@ -22,6 +23,14 @@ const isRevokedCallbackUser = async function (req, token, done) {
 
 // 2 options algorithms HS256/RS256
 const middlewareOptions = {
+  optional: jwt({
+    secret: process.env.JWT_USER_SECRET,
+    userProperty: 'payload',
+    credentialsRequired: false,
+    algorithms: ['HS256'],
+  }).unless({
+    path: ['/auth/new-access-token'],
+  }),
   user: jwt({
     secret: process.env.JWT_USER_SECRET,
     algorithms: ['HS256'],

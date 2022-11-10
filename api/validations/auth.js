@@ -1,5 +1,5 @@
 const Joi = require('joi')
-const { emailRegex, passwordRegex } = require('./constants')
+const { passwordRegex } = require('../utils/constants')
 
 const register = Joi.object({
   email: Joi.string().email().required().messages({

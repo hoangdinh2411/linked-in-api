@@ -1,4 +1,4 @@
-const UserModel = require('../../schemas/User')
+const UserModel = require('../../modules/User')
 const createHttpErrors = require('http-errors')
 
 class UserController {
@@ -11,10 +11,11 @@ class UserController {
 
       if (!user) throw new createHttpErrors.NotFound('User Not Found')
 
-      const data = user.jsonData()
+      const result = user.jsonData()
 
       return res.status(200).json({
-        data,
+        success: true,
+        result,
       })
     } catch (error) {
       next(error)
@@ -22,4 +23,4 @@ class UserController {
   }
 }
 
-module.exports= UserController
+module.exports = UserController

@@ -1,4 +1,4 @@
-const UserModel = require('../../schemas/User')
+const UserModel = require('../../modules/User')
 const { register, login } = require('../../validations/auth')
 const createHttpErrors = require('http-errors')
 const jwt = require('jsonwebtoken')
@@ -32,7 +32,7 @@ class AuthController {
         })
         .then(() =>
           res.status(200).send({
-            status: 'success',
+            success: true,
             message: 'Register Success ! Please check your email',
           })
         )
@@ -68,7 +68,7 @@ class AuthController {
       })
       const data = existing_user.jsonData()
       data.token = token
-      return res.status(200).send({ status: 'success', token })
+      return res.status(200).send({ success: true, token })
     } catch (error) {
       next(error)
     }
@@ -77,7 +77,8 @@ class AuthController {
     try {
       const refresh_token = req.body.refresh_token
       if (!refresh_token)
-        throw new createHttpErrors.BadRequest('invalid refresh token')
+        throw new createHttpErrors.BadRequest('refresh token malformed')
+      let payload
       jwt.verify(
         refresh_token,
         appConfig.refresh_token_secret,
@@ -85,18 +86,34 @@ class AuthController {
           if (err) {
             throw new createHttpErrors.Unauthorized('refresh token expired')
           }
+          payload = {
+            id: decoded.id,
+            full_name: decoded.full_name,
+            status: decoded.status,
+          }
         }
       )
-
-      // let token = await AuthController.generateToken({
-      //   id: existing_user._id,
-      //   full_name: existing_user.full_name,
-      //   status: existing_user.status,
-      //   role: existing_user.role,
-      // })
-      // const data = existing_user.jsonData()
-      // data.token = token
-      // return res.status(200).send({ status: 'success', token })
+      let new_access_token = jwt.sign(payload, appConfig.token_user_secret, {
+        expiresIn: '1h',
+      })
+      await UserModel.findOneAndUpdate(
+        {
+          _id: payload.id,
+          refresh_token,
+        },
+        {
+          new_access_token,
+        },
+        {
+          new: true,
+        }
+      ).then((data) => {
+        if (data) {
+          return res.status(200).send({ success: true, new_access_token })
+        } else {
+          throw new createHttpErrors.Unauthorized('invalid refresh token')
+        }
+      })
     } catch (error) {
       next(error)
     }
@@ -116,7 +133,9 @@ class AuthController {
           if (err) {
             throw new Error()
           }
-          return res.status(200).send('Verify Success')
+          return res
+            .status(200)
+            .send({ success: true, message: 'Verify Success' })
         })
       })
     } catch (error) {
@@ -129,7 +148,7 @@ class AuthController {
     })
 
     let refresh_token = jwt.sign(payload, appConfig.refresh_token_secret, {
-      expiresIn: '7d',
+      expiresIn: '30d',
     })
     await UserModel.findByIdAndUpdate(
       {
