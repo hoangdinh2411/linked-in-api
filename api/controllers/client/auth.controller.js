@@ -66,8 +66,6 @@ class AuthController {
         full_name: existing_user.full_name,
         status: existing_user.status,
       })
-      const data = existing_user.jsonData()
-      data.token = token
       return res.status(200).send({ success: true, token })
     } catch (error) {
       next(error)
